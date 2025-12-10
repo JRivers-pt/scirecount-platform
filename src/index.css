@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@theme {
+  /* Custom Colors */
+  --color-sys-dark: #0f172a;
+  --color-sys-sidebar: #1e293b;
+  --color-sys-primary: #2563eb;
+  --color-sys-success: #10b981;
+  --color-sys-danger: #ef4444;
+
+  /* Custom Font */
+  --font-sans: 'Inter', sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    @apply antialiased text-slate-800 bg-slate-50;
+  }
+}
+
+/* Custom Utilities using @utility directive (v4 specific where needed, or just standard CSS classes with @apply) */
+.glass {
+  @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-xl;
+}
+
+.glass-dark {
+  @apply bg-slate-900/80 backdrop-blur-lg border border-white/10 shadow-2xl;
+}

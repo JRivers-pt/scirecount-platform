@@ -1,0 +1,51 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "search_placeholder": "Pesquisar centros, sensores...",
+    "notifications": "Notificações",
+    "profile": "Perfil"
+  },
+  "auth": {
+    "welcome_title": "ScireCount",
+    "welcome_subtitle": "Contagem de Pessoas e Análise em Tempo Real",
+    "username": "Nome de Utilizador",
+    "password": "Palavra-passe",
+    "username_placeholder": "Introduza o seu utilizador",
+    "password_placeholder": "••••••••",
+    "login_button": "Aceder à Plataforma",
+    "login_error": "Credenciais inválidas. Tente User: demo / Pass: scire2025",
+    "copyright": "© 2025 TechScire Solutions"
+  },
+  "sidebar": {
+    "analytics_section": "Analítica",
+    "visits": "Visitas",
+    "real_time": "Tempo Real",
+    "zones": "Zonas e Centros",
+    "reports_section": "Relatórios",
+    "stats": "Estatísticas",
+    "heatmaps": "Mapas de Calor",
+    "management_section": "Gestão",
+    "users": "Utilizadores",
+    "settings": "Configuração"
+  },
+  "dashboard": {
+    "title": "Visão Geral de Visitas",
+    "subtitle": "Plataforma de Análise em Tempo Real",
+    "filter_today": "Hoje: {{date}}",
+    "filter_button": "Filtrar Dados",
+    "card_total_visits": "Total de Visitas",
+    "card_avg_occupancy": "Aforo Médio",
+    "card_avg_stay": "Estadia Média",
+    "vs_last_month": "vs mês anterior",
+    "table_title": "Cifras por Centro",
+    "view_report": "Ver Relatório Completo",
+    "table_header_center": "Centro / Sensor",
+    "table_header_status": "Estado",
+    "table_header_in": "Entradas",
+    "table_header_occupancy": "Aforo Atual",
+    "table_header_out": "Saídas",
+    "table_header_update": "Última Atualização",
+    "status_active": "Ativo",
+    "status_maintenance": "Manutenção"
+  }
+}

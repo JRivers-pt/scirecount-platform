@@ -1,0 +1,51 @@
+{
+    "common": {
+        "loading": "Loading...",
+        "search_placeholder": "Search centers, sensors...",
+        "notifications": "Notifications",
+        "profile": "Profile"
+    },
+    "auth": {
+        "welcome_title": "ScireCount",
+        "welcome_subtitle": "Real-time People Counting & Analytics",
+        "username": "Username",
+        "password": "Password",
+        "username_placeholder": "Enter your username",
+        "password_placeholder": "••••••••",
+        "login_button": "Access Platform",
+        "login_error": "Invalid credentials. Try User: demo / Pass: scire2025",
+        "copyright": "© 2025 TechScire Solutions"
+    },
+    "sidebar": {
+        "analytics_section": "Analytics",
+        "visits": "Visits",
+        "real_time": "Real Time",
+        "zones": "Zones & Centers",
+        "reports_section": "Reports",
+        "stats": "Statistics",
+        "heatmaps": "Heatmaps",
+        "management_section": "Management",
+        "users": "Users",
+        "settings": "Settings"
+    },
+    "dashboard": {
+        "title": "Visits Overview",
+        "subtitle": "Real-time Analytics Platform",
+        "filter_today": "Today: {{date}}",
+        "filter_button": "Filter Data",
+        "card_total_visits": "Total Visits",
+        "card_avg_occupancy": "Avg Occupancy",
+        "card_avg_stay": "Avg Stay Time",
+        "vs_last_month": "vs last month",
+        "table_title": "Figures by Center",
+        "view_report": "View Full Report",
+        "table_header_center": "Center / Sensor",
+        "table_header_status": "Status",
+        "table_header_in": "Entries",
+        "table_header_occupancy": "Current Occupancy",
+        "table_header_out": "Exits",
+        "table_header_update": "Last Update",
+        "status_active": "Active",
+        "status_maintenance": "Maintenance"
+    }
+}
