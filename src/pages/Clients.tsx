@@ -1,28 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Search, MoreHorizontal, Mail, MapPin, CheckCircle, XCircle } from 'lucide-react';
 
-// Mock Client Data
-const INITIAL_CLIENTS = [
-    { id: 1, name: "Fashion Retail S.A.", email: "contact@fashionretail.com", plan: "Enterprise", status: "active", locations: 12 },
-    { id: 2, name: "TechStore Ltd", email: "admin@techstore.pt", plan: "Pro", status: "active", locations: 3 },
-    { id: 3, name: "MegaMall Center", email: "ops@megamall.com", plan: "Enterprise", status: "inactive", locations: 1 },
-];
-
+// Initial state empty, fetch from backend
 const Clients = () => {
     const { t } = useTranslation();
-    const [clients, setClients] = useState(INITIAL_CLIENTS);
+    const [clients, setClients] = useState<any[]>([]);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     // Form State
     const [newClient, setNewClient] = useState({ name: '', email: '', plan: 'Pro' });
 
-    const handleCreateClient = (e: React.FormEvent) => {
+    // Fetch Clients
+    useEffect(() => {
+        fetch('http://localhost:3000/api/clients')
+            .then(res => res.json())
+            .then(data => setClients(data))
+            .catch(err => console.error("Failed to fetch clients:", err));
+    }, []);
+
+    const handleCreateClient = async (e: React.FormEvent) => {
         e.preventDefault();
-        const id = clients.length + 1;
-        setClients([...clients, { ...newClient, id, status: 'active', locations: 0 }]);
-        setIsCreateModalOpen(false);
-        setNewClient({ name: '', email: '', plan: 'Pro' });
+
+        try {
+            const response = await fetch('http://localhost:3000/api/clients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...newClient, status: 'active', locationsCount: 0 })
+            });
+
+            if (response.ok) {
+                const createdClient = await response.json();
+                setClients([...clients, createdClient]);
+                setIsCreateModalOpen(false);
+                setNewClient({ name: '', email: '', plan: 'Pro' });
+            }
+        } catch (error) {
+            console.error("Error creating client:", error);
+        }
     };
 
     return (

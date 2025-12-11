@@ -2,12 +2,16 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require("socket.io");
+const sequelize = require('./database');
+const Device = require('./models/Device');
+const DeviceLog = require('./models/DeviceLog');
+const Client = require('./models/Client');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173", // Allow frontend access
+        origin: "*", // Allow all for dev
         methods: ["GET", "POST"]
     }
 });
@@ -17,117 +21,143 @@ app.use(express.json());
 
 const PORT = 3000;
 
-// Mock Data for TD2000 and VS125 Devices
-// Storing this in memory for now. In production, fetch from PostgreSQL.
-let devices = [
-    {
-        deviceId: 'VS125-29384',
-        name: 'Entrada Principal',
-        status: 'online',
-        lineCrossing: { in: 1450, out: 1200 },
-        occupancy: 250,
-        lastUpdate: new Date().toISOString(),
-        model: 'VS125'
-    },
-    {
-        deviceId: 'VS125-99283',
-        name: 'Salida Cafetería',
-        status: 'online',
-        lineCrossing: { in: 800, out: 950 },
-        occupancy: -150, // Just a simulation artifact, should handle logic better
-        lastUpdate: new Date().toISOString(),
-        model: 'VS125'
-    },
-    {
-        deviceId: 'TD2000-55102',
-        name: 'Pasillo Central (TD2000)',
-        status: 'online',
-        lineCrossing: { in: 340, out: 310 },
-        occupancy: 30,
-        lastUpdate: new Date().toISOString(),
-        model: 'TD2000'
-    }
-];
+// Helper to format device for frontend
+const formatDevice = (d) => ({
+    deviceId: d.deviceId,
+    name: d.name,
+    status: d.status,
+    lineCrossing: { in: d.lastIn, out: d.lastOut },
+    occupancy: d.currentOccupancy,
+    lastUpdate: d.lastUpdate,
+    model: d.model
+});
 
 // API Endpoints
-app.get('/api/devices', (req, res) => {
-    res.json(devices);
+app.get('/api/devices', async (req, res) => {
+    try {
+        const devices = await Device.findAll();
+        res.json(devices.map(formatDevice));
+    } catch (error) {
+        console.error("Error fetching devices:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
 });
 
-// Real-time Simulation Loop
-// Endpoint to receive real data from TD2000 Sensor
-// Configure your TD2000 to POST JSON to: http://<YOUR_PC_IP>:3000/api/sensors/td2000
-app.post('/api/sensors/td2000', (req, res) => {
-    const data = req.body;
-    console.log('Received TD2000 data:', data);
+// Clients API
+app.get('/api/clients', async (req, res) => {
+    try {
+        const clients = await Client.findAll();
+        res.json(clients);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
-    // Expected standard payload structure (adapting to what typical sensors send)
-    // If your TD2000 sends a specific format, we can adjust this mapping.
-    // Assuming structure: { deviceId: "...", in: 10, out: 5, occupancy: 5 }
+app.post('/api/clients', async (req, res) => {
+    try {
+        const client = await Client.create(req.body);
+        res.json(client);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
 
-    // 1. Identify Device
-    const deviceId = data.deviceId || data.mac || 'TD2000-DEFAULT';
+// Reports API
+app.get('/api/reports', async (req, res) => {
+    try {
+        const { deviceId, startDate, endDate } = req.query;
+        const where = {};
 
-    let deviceIndex = devices.findIndex(d => d.deviceId === deviceId);
-
-    // 2. If new device, register it
-    if (deviceIndex === -1) {
-        devices.push({
-            deviceId: deviceId,
-            name: data.deviceName || 'New Sensor TD2000',
-            status: 'online',
-            lineCrossing: {
-                in: Number(data.in) || 0,
-                out: Number(data.out) || 0
-            },
-            occupancy: Number(data.occupancy) || (Number(data.in || 0) - Number(data.out || 0)),
-            lastUpdate: new Date().toISOString(),
-            model: 'TD2000'
-        });
-        deviceIndex = devices.length - 1;
-    } else {
-        // 3. Update existing device
-        // Support both "total counts" vs "increment" logic. 
-        // For now, assuming sensor sends TOTAL counts. If it sends increments, we'd add +=.
-        const d = devices[deviceIndex];
-
-        // Check if payload has 'in'/'out' or 'lineCrossing' object
-        const inCount = data.lineCrossing?.in ?? data.in ?? d.lineCrossing.in;
-        const outCount = data.lineCrossing?.out ?? data.out ?? d.lineCrossing.out;
-
-        d.lineCrossing.in = Number(inCount);
-        d.lineCrossing.out = Number(outCount);
-
-        // Recalculate occupancy if explicitly sent, otherwise derive
-        if (data.occupancy !== undefined) {
-            d.occupancy = Number(data.occupancy);
-        } else {
-            d.occupancy = Math.max(0, d.lineCrossing.in - d.lineCrossing.out);
+        if (deviceId) where.deviceId = deviceId;
+        if (startDate && endDate) {
+            const { Op } = require('sequelize');
+            where.timestamp = {
+                [Op.between]: [new Date(startDate), new Date(endDate)]
+            };
         }
 
-        d.status = 'online';
-        d.lastUpdate = new Date().toISOString();
+        const logs = await DeviceLog.findAll({
+            where,
+            order: [['timestamp', 'DESC']],
+            limit: 100 // Cap for now
+        });
+
+        res.json(logs);
+    } catch (error) {
+        console.error("Report Error:", error);
+        res.status(500).json({ error: "Failed to generate report" });
     }
-
-    // 4. Broadcast update to Frontend
-    io.emit('devices_update', devices);
-
-    res.status(200).json({ status: 'success', message: 'Data processed' });
 });
 
-// Remove old simulation loop
-// setInterval(() => { ... }, 3000);
+// Real Data Ingestion (TD2000 / Webhook)
+app.post('/api/sensors/td2000', async (req, res) => {
+    const data = req.body;
+    console.log('Received Sensor Data:', data);
 
-io.on('connection', (socket) => {
-    console.log('a user connected');
-    // Send initial data
-    socket.emit('devices_update', devices);
+    const deviceId = data.deviceId || data.mac || 'TD2000-DEFAULT';
+    const inCount = Number(data.lineCrossing?.in ?? data.in ?? 0);
+    const outCount = Number(data.lineCrossing?.out ?? data.out ?? 0);
+    const occupancy = data.occupancy !== undefined
+        ? Number(data.occupancy)
+        : Math.max(0, inCount - outCount);
 
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
+    try {
+        // 1. Find or Create Device
+        let [device, created] = await Device.findOrCreate({
+            where: { deviceId },
+            defaults: {
+                name: data.deviceName || 'New Sensor',
+                model: 'TD2000',
+                status: 'online',
+                lastIn: inCount,
+                lastOut: outCount,
+                currentOccupancy: occupancy
+            }
+        });
+
+        // 2. Update if exists
+        if (!created) {
+            device.lastIn = inCount;
+            device.lastOut = outCount;
+            device.currentOccupancy = occupancy;
+            device.status = 'online';
+            device.lastUpdate = new Date();
+            await device.save();
+        }
+
+        // 3. Log History (Critical for Reports)
+        await DeviceLog.create({
+            deviceId: device.deviceId,
+            inCount: inCount,
+            outCount: outCount,
+            occupancy: occupancy
+        });
+
+        // 4. broadcast to socket
+        const allDevices = await Device.findAll();
+        io.emit('devices_update', allDevices.map(formatDevice));
+
+        res.status(200).json({ status: 'success' });
+    } catch (error) {
+        console.error("Error processing sensor data:", error);
+        res.status(500).json({ error: "Database error" });
+    }
+});
+
+io.on('connection', async (socket) => {
+    console.log('User connected');
+    // Send current state
+    const devices = await Device.findAll();
+    socket.emit('devices_update', devices.map(formatDevice));
+});
+
+// Sync DB and Start Server
+sequelize.sync().then(() => {
+    console.log('Database synced (SQLite)');
+    // Create Default Users/Clients if empty (Optional, can do later)
+    server.listen(PORT, () => {
+        console.log(`Backend server running on http://localhost:${PORT}`);
     });
-});
-
-server.listen(PORT, () => {
-    console.log(`Backend server running on http://localhost:${PORT}`);
+}).catch(err => {
+    console.error('Failed to sync database:', err);
 });

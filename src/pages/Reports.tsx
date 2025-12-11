@@ -17,19 +17,37 @@ const ReportFilter = ({ icon: Icon, label, placeholder }: { icon: any, label: st
     </div>
 );
 
-// Mock Data for Report
-const MOCK_REPORT_DATA = [
-    { center: 'Entrada Principal', date: '05/12/2025', start: '09:00', end: '10:00', visits: 145, occupancy: 42, stay: '12m 30s' },
-    { center: 'Entrada Principal', date: '05/12/2025', start: '10:00', end: '11:00', visits: 230, occupancy: 85, stay: '18m 45s' },
-    { center: 'Entrada Principal', date: '05/12/2025', start: '11:00', end: '12:00', visits: 310, occupancy: 120, stay: '22m 10s' },
-    { center: 'Entrada Principal', date: '05/12/2025', start: '12:00', end: '13:00', visits: 280, occupancy: 95, stay: '20m 00s' },
-    { center: 'Salida Cafetería', date: '05/12/2025', start: '09:00', end: '10:00', visits: 50, occupancy: 10, stay: '08m 15s' },
-    { center: 'Salida Cafetería', date: '05/12/2025', start: '10:00', end: '11:00', visits: 95, occupancy: 30, stay: '15m 20s' },
-];
+// Helper to format ISO date
+const formatDate = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString();
+};
+
+const formatTime = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString();
+};
 
 const Reports = () => {
     const { t } = useTranslation();
     const [hasSearched, setHasSearched] = useState(false);
+    const [logs, setLogs] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSearch = async () => {
+        setIsLoading(true);
+        try {
+            // Fetch last 100 logs (capped by backend)
+            const res = await fetch('http://localhost:3000/api/reports');
+            const data = await res.json();
+            setLogs(data);
+            setHasSearched(true);
+        } catch (error) {
+            console.error("Failed to fetch reports:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
@@ -44,15 +62,16 @@ const Reports = () => {
             <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div className="flex flex-wrap gap-6 items-end">
                     <ReportFilter icon={FileText} label={t('reports.filter_type')} placeholder={t('reports.type_visits')} />
-                    <ReportFilter icon={Search} label={t('reports.filter_center')} placeholder="Todos los centros" />
-                    <ReportFilter icon={Calendar} label={t('reports.filter_dates')} placeholder="Esta semana" />
+                    <ReportFilter icon={Search} label={t('reports.filter_center')} placeholder="Todos os centros" />
+                    <ReportFilter icon={Calendar} label={t('reports.filter_dates')} placeholder="Hoje" />
 
                     <button
-                        onClick={() => setHasSearched(true)}
-                        className="px-6 py-2.5 bg-sys-primary text-white font-medium rounded-lg hover:bg-blue-600 transition-colors shadow-lg shadow-sys-primary/25 flex items-center gap-2"
+                        onClick={handleSearch}
+                        disabled={isLoading}
+                        className="px-6 py-2.5 bg-sys-primary text-white font-medium rounded-lg hover:bg-blue-600 transition-colors shadow-lg shadow-sys-primary/25 flex items-center gap-2 disabled:opacity-50"
                     >
                         <Search className="w-4 h-4" />
-                        {t('reports.btn_search')}
+                        {isLoading ? '...' : t('reports.btn_search')}
                     </button>
                 </div>
             </div>
@@ -73,25 +92,31 @@ const Reports = () => {
                                 <tr>
                                     <th className="px-6 py-4">{t('reports.col_center')}</th>
                                     <th className="px-6 py-4">{t('reports.col_date')}</th>
-                                    <th className="px-6 py-4">{t('reports.col_start')}</th>
-                                    <th className="px-6 py-4">{t('reports.col_end')}</th>
-                                    <th className="px-6 py-4 text-center">{t('reports.col_visits')}</th>
+                                    <th className="px-6 py-4">Hora</th>
+                                    <th className="px-6 py-4 text-center">Entradas</th>
+                                    <th className="px-6 py-4 text-center">Saídas</th>
                                     <th className="px-6 py-4 text-center">{t('reports.col_occupancy')}</th>
-                                    <th className="px-6 py-4 text-center">{t('reports.col_stay')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {MOCK_REPORT_DATA.map((row, i) => (
-                                    <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-slate-700">{row.center}</td>
-                                        <td className="px-6 py-4 text-slate-600">{row.date}</td>
-                                        <td className="px-6 py-4 text-slate-500 font-mono">{row.start}</td>
-                                        <td className="px-6 py-4 text-slate-500 font-mono">{row.end}</td>
-                                        <td className="px-6 py-4 text-center font-bold text-slate-700">{row.visits}</td>
-                                        <td className="px-6 py-4 text-center text-slate-600">{row.occupancy}</td>
-                                        <td className="px-6 py-4 text-center text-slate-600">{row.stay}</td>
+                                {logs.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                                            No data found for this period.
+                                        </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    logs.map((row, i) => (
+                                        <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                            <td className="px-6 py-4 font-medium text-slate-700">{row.deviceId}</td>
+                                            <td className="px-6 py-4 text-slate-600">{formatDate(row.timestamp)}</td>
+                                            <td className="px-6 py-4 text-slate-500 font-mono">{formatTime(row.timestamp)}</td>
+                                            <td className="px-6 py-4 text-center font-bold text-green-600">+{row.inCount}</td>
+                                            <td className="px-6 py-4 text-center font-bold text-red-500">-{row.outCount}</td>
+                                            <td className="px-6 py-4 text-center text-slate-700 font-semibold">{row.occupancy}</td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
