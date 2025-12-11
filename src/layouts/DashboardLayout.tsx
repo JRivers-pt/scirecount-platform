@@ -4,14 +4,13 @@ import { useTranslation } from 'react-i18next';
 import {
     LayoutDashboard,
     Activity,
-    MapPin,
-    Settings,
     BarChart3,
     PieChart,
     Users,
     Menu,
     Bell,
-    Search
+    Search,
+    FileText
 } from 'lucide-react';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
@@ -63,18 +62,16 @@ const DashboardLayout = () => {
 
                 {/* Navigation */}
                 <div className="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
-                    <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-2">{t('sidebar.analytics_section')}</p>
                     <SidebarItem to="/dashboard" icon={LayoutDashboard} label={t('sidebar.visits')} active={true} />
                     <SidebarItem to="/dashboard/realtime" icon={Activity} label={t('sidebar.real_time')} />
-                    <SidebarItem to="/dashboard/zones" icon={MapPin} label={t('sidebar.zones')} />
 
-                    <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">{t('sidebar.reports_section')}</p>
-                    <SidebarItem to="/dashboard/stats" icon={BarChart3} label={t('sidebar.stats')} />
-                    <SidebarItem to="/dashboard/heatmap" icon={PieChart} label={t('sidebar.heatmaps')} />
+                    <SidebarItem to="/dashboard/performance" icon={BarChart3} label={t('sidebar.performance_analysis')} />
+                    <SidebarItem to="/dashboard/optimizer" icon={PieChart} label={t('sidebar.store_optimizer')} />
+
+                    <SidebarItem to="/dashboard/reports" icon={FileText} label={t('sidebar.reports')} />
 
                     <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">{t('sidebar.management_section')}</p>
-                    <SidebarItem to="/dashboard/users" icon={Users} label={t('sidebar.users')} />
-                    <SidebarItem to="/dashboard/settings" icon={Settings} label={t('sidebar.settings')} />
+                    <SidebarItem to="/dashboard/clients" icon={Users} label={t('sidebar.clients')} />
                 </div>
 
                 {/* User Profile Snippet */}

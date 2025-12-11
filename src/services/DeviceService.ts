@@ -1,5 +1,5 @@
-// This service manages the communication with Milesight VS125 devices
-// In production, this would connect to your Backend API or MQTT Broker
+// This service manages the communication with the Backend API and real-time updates
+import { io, Socket } from 'socket.io-client';
 
 export interface DeviceData {
     deviceId: string;
@@ -11,59 +11,52 @@ export interface DeviceData {
     };
     occupancy: number;
     lastUpdate: Date;
+    model?: string; // Added model field for TD2000 distinction
 }
 
-class MilesightService {
-    private socket: WebSocket | null = null;
+class DeviceServiceImpl {
+    private socket: Socket | null = null;
     private listeners: ((data: DeviceData[]) => void)[] = [];
-
-    // Mock data to simulate the device connection
-    private mockData: DeviceData[] = [
-        {
-            deviceId: 'VS125-29384',
-            name: 'Entrada Principal',
-            status: 'online',
-            lineCrossing: { in: 1450, out: 1200 },
-            occupancy: 45,
-            lastUpdate: new Date(),
-        },
-        {
-            deviceId: 'VS125-99283',
-            name: 'Salida Cafetería',
-            status: 'online',
-            lineCrossing: { in: 800, out: 950 },
-            occupancy: 12,
-            lastUpdate: new Date(),
-        }
-    ];
+    private currentData: DeviceData[] = [];
 
     constructor() {
-        // In a real app, successful initialization would start the WebSocket connection
-        // this.connect(); 
+        // Initialize connection
+        this.connect();
     }
 
-    // Connect to TechScire Real-time Backend
-    connect(url: string) {
-        this.socket = new WebSocket(url);
+    private connect() {
+        // Connect to the backend server
+        this.socket = io('http://localhost:3000');
 
-        this.socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            // Transform VS125 JSON payload to our app format
-            this.notifyListeners(data);
-        };
+        this.socket.on('connect', () => {
+            console.log('Connected to backend WebSocket');
+        });
+
+        this.socket.on('devices_update', (data: any[]) => {
+            // Transform string dates back to Date objects if needed, 
+            // though for display mostly strings are fine, strict typing wants Date
+            const parsedData = data.map(d => ({
+                ...d,
+                lastUpdate: new Date(d.lastUpdate)
+            }));
+
+            this.currentData = parsedData;
+            this.notifyListeners(parsedData);
+        });
+
+        this.socket.on('disconnect', () => {
+            console.log('Disconnected from backend');
+        });
     }
 
     // Allow components (like Dashboard) to subscribe to updates
     subscribe(callback: (data: DeviceData[]) => void) {
         this.listeners.push(callback);
-        // Send immediate data on subscribe
-        callback(this.mockData);
 
-        // Simulate real-time updates for demo purposes
-        setInterval(() => {
-            this.simulateNewEntrance();
-            callback([...this.mockData]);
-        }, 5000); // Update every 5 seconds
+        // return current data immediately if available
+        if (this.currentData.length > 0) {
+            callback(this.currentData);
+        }
 
         return () => {
             this.listeners = this.listeners.filter(l => l !== callback);
@@ -74,14 +67,18 @@ class MilesightService {
         this.listeners.forEach(l => l(data));
     }
 
-    // Simulation helper
-    private simulateNewEntrance() {
-        const device = this.mockData[0];
-        device.lineCrossing.in += Math.floor(Math.random() * 3);
-        device.lineCrossing.out += Math.floor(Math.random() * 2);
-        device.occupancy = device.lineCrossing.in - device.lineCrossing.out;
-        device.lastUpdate = new Date();
+    // Fallback for manual fetch if needed
+    async getAllDevices(): Promise<DeviceData[]> {
+        if (this.currentData.length > 0) return this.currentData;
+        try {
+            const res = await fetch('http://localhost:3000/api/devices');
+            const data = await res.json();
+            return data.map((d: any) => ({ ...d, lastUpdate: new Date(d.lastUpdate) }));
+        } catch (error) {
+            console.error("Failed to fetch devices", error);
+            return [];
+        }
     }
 }
 
-export const deviceService = new MilesightService();
+export const deviceService = new DeviceServiceImpl();

@@ -23,13 +23,18 @@ const Login = () => {
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-sys-dark relative overflow-hidden">
-            {/* Background Elements */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-sys-primary/20 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 rounded-full blur-[120px]" />
+            {/* Background Image with Overlay */}
+            <div className="absolute inset-0 z-0">
+                <img
+                    src="/shopping_mall_analytics_1765452933558.png"
+                    alt="Shopping Mall Analytics Background"
+                    className="w-full h-full object-cover"
+                />
+                {/* Dark Blue Overlay for Text Readability */}
+                <div className="absolute inset-0 bg-sys-dark/80 backdrop-blur-[2px]"></div>
             </div>
 
-            <div className="w-full max-w-md z-10 p-6">
+            <div className="w-full max-w-md z-10 p-6 relative">
                 <div className="glass-dark rounded-2xl p-8 shadow-2xl border border-white/10">
                     <div className="text-center mb-8">
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-tr from-sys-primary to-purple-600 mb-4 shadow-lg shadow-sys-primary/30">
