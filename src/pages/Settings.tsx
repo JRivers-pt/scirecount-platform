@@ -1,6 +1,5 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Save, User, MapPin, Bell, Globe, Shield } from 'lucide-react';
+import { Save, Globe, Shield } from 'lucide-react';
 
 const Settings = () => {
     const { t } = useTranslation();
