@@ -26,7 +26,11 @@ class DeviceServiceImpl {
 
     private connect() {
         // Connect to the backend server
-        this.socket = io('http://localhost:3000');
+        // Use environment variable if available, otherwise localhost
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        console.log(`Connecting to Backend at: ${API_URL}`);
+
+        this.socket = io(API_URL);
 
         this.socket.on('connect', () => {
             console.log('Connected to backend WebSocket');
@@ -71,7 +75,8 @@ class DeviceServiceImpl {
     async getAllDevices(): Promise<DeviceData[]> {
         if (this.currentData.length > 0) return this.currentData;
         try {
-            const res = await fetch('http://localhost:3000/api/devices');
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const res = await fetch(`${API_URL}/api/devices`);
             const data = await res.json();
             return data.map((d: any) => ({ ...d, lastUpdate: new Date(d.lastUpdate) }));
         } catch (error) {
